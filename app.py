@@ -5,11 +5,7 @@ from st_aggrid import AgGrid, GridOptionsBuilder
 # --------------------------------------------
 # Cargar el CSV desde GitHub
 # --------------------------------------------
-
-# Usa el enlace directo al archivo CSV en tu repositorio de GitHub
-url_csv = "https://github.com/usuario/repositorio/raw/main/data/mi_archivo.csv"  # Cambia la URL según tu repositorio
-
-# Leer el CSV desde la URL
+url_csv = "https://raw.githubusercontent.com/JEVANGELISTAJ/reporte-ventas-streamlit/refs/heads/main/PRUEBA3_PIVOTEADA.csv"
 df = pd.read_csv(url_csv)
 
 # Limpiar espacios y convertir a minúsculas en los nombres de las columnas
