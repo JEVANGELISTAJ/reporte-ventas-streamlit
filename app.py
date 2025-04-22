@@ -3,21 +3,26 @@ import streamlit as st
 from st_aggrid import AgGrid, GridOptionsBuilder
 
 # --------------------------------------------
-# Cargar el CSV desde la ruta especificada
+# Cargar el CSV desde GitHub
 # --------------------------------------------
 
-csv_path = r'C:\Users\jesus\OneDrive - UNIVERSIDAD NACIONAL DE INGENIERIA\INKAMOTORS\REPORTES\MES ACTUAL\PRUEBA3_PIVOTEADA.csv'
+# Usa el enlace directo al archivo CSV en tu repositorio de GitHub
+url_csv = "https://github.com/usuario/repositorio/raw/main/data/mi_archivo.csv"  # Cambia la URL según tu repositorio
 
-# Leer el CSV
-df = pd.read_csv(csv_path)
+# Leer el CSV desde la URL
+df = pd.read_csv(url_csv)
 
 # Limpiar espacios y convertir a minúsculas en los nombres de las columnas
 df.columns = df.columns.str.strip().str.lower()
 
+# Reemplazar valores NaN por None en todo el DataFrame
+df = df.where(pd.notnull(df), None)
+
 # --------------------------------------------
-# Renombrar las columnas
+# Mostrar datos en Streamlit usando AgGrid
 # --------------------------------------------
 
+# Renombrar las columnas como en tu código anterior
 df = df.rename(columns={
     'leads_corte_mes3': 'Leads Marzo',
     'leads_corte_mes4': 'Leads Abril',
@@ -37,27 +42,47 @@ cols = [
     'Reservado Marzo', 'Reservado Abril'
 ]
 
-# Agrupar los datos
+# Agrupar los datos como en tu código original
 df_grouped = df.groupby(['sede', 'tienda', 'marca'])[cols].sum().reset_index()
 
 # Crear columna jerárquica para tree structure (sin mostrarla en la tabla)
 df_grouped['tree'] = df_grouped[['sede', 'tienda', 'marca']].agg(' / '.join, axis=1)
 
-# --------------------------------------------
-# Mostrar el reporte en Streamlit usando AgGrid
-# --------------------------------------------
-
+# Crear grid con agrupación en modo jerárquico
 gb = GridOptionsBuilder.from_dataframe(df_grouped)
 
-# Configuración de la agrupación
+# Configurar agrupación jerárquica para la tabla sin la fila concatenada
 gb.configure_default_column(groupable=True, enableRowGroup=True)
-gb.configure_grid_options(rowGroupPanelShow='always', groupDefaultExpanded=0)
+
+# Configuración de agrupación jerárquica
+gb.configure_grid_options(
+    rowGroupPanelShow='always',  # Siempre mostrar el panel de grupo
+    groupDefaultExpanded=0,  # Contraído por defecto
+    autoGroupColumnDef={
+        "headerName": "Sede / Tienda / Marca",
+        "field": "tree",  # Mantener el campo para la agrupación interna
+        "cellRendererParams": {
+            "suppressCount": True  # No mostrar el conteo de filas
+        }
+    }
+)
+
+# Configurar las columnas de agrupación, pero ocultarlas para la vista final
+gb.configure_column("sede", rowGroup=True, hide=True)  # Ocultar 'sede'
+gb.configure_column("tienda", rowGroup=True, hide=True)  # Ocultar 'tienda'
+gb.configure_column("marca", rowGroup=True, hide=True)  # Ocultar 'marca'
+
+# Configurar las columnas de valores (leads, facturado, etc.) para que estén visibles siempre
+for col in cols:
+    gb.configure_column(col, hide=False, aggFunc='sum')  # Agregar función de agregación (suma) para columnas numéricas
+
+# No mostrar la columna 'tree' en la tabla final, solo para la agrupación
+gb.configure_columns(["tree"], hide=True)
 
 grid_options = gb.build()
 
+# Mostrar con AgGrid
 st.subheader("📊 Reporte Expandible por Sede, Tienda y Marca (estilo Excel +)")
-
-# Mostrar el reporte en Streamlit
 AgGrid(
     df_grouped,
     gridOptions=grid_options,
@@ -65,12 +90,4 @@ AgGrid(
     allow_unsafe_jscode=True,
     update_mode="NO_UPDATE",
     fit_columns_on_grid_load=True
-)
-
-# Agregar un enlace de descarga para el CSV
-st.download_button(
-    label="Descargar CSV",
-    data=df_grouped.to_csv(index=False, encoding="utf-8-sig"),
-    file_name="PRUEBA3_PIVOTEADA.csv",
-    mime="text/csv",
 )
