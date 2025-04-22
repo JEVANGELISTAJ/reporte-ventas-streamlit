@@ -1,4 +1,4 @@
-pyodbc
-pandas
-streamlit
-st-aggrid
+streamlit==1.17.0
+pandas==1.4.2
+pyodbc==4.0.32
+st-aggrid==0.3.2
